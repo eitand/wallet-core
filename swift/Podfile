@@ -1,9 +1,0 @@
-platform :ios, '10.0'
-ENV['COCOAPODS_DISABLE_STATS'] = 'true'
-target 'TrustWalletCore' do
-  use_frameworks!
-
-  pod 'SwiftProtobuf', '~> 1.2.0'
-
-  target 'TrustWalletCoreTests'
-end
