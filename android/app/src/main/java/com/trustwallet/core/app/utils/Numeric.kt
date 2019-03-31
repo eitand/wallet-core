@@ -61,4 +61,9 @@ object Numeric {
     fun toHexString(input: ByteArray?): String {
         return toHexString(input, 0, input!!.size, true)
     }
+
+    fun toHexString(input: ByteArray?, withPrefix: Boolean): String {
+        return toHexString(input, 0, input!!.size, withPrefix)
+    }
+
 }

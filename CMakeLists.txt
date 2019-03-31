@@ -31,7 +31,7 @@ include(cmake/Protobuf.cmake)
 # Source files
 if(${ANDROID})
     message("Configuring for JNI")
-    file(GLOB_RECURSE sources src/*.c src/*.cc src/*.cpp src/*.h jni/cpp/*.c jni/cpp/*.cpp jni/cpp/*.h)
+    file(GLOB_RECURSE sources src/*.c src/*.cc src/*.cpp src/*.h JNI/cpp/*.c JNI/cpp/*.cpp JNI/cpp/*.h)
     add_library(TrustWalletCore SHARED ${sources} ${PROTO_SRCS} ${PROTO_HDRS})
 
     find_library(log-lib log)

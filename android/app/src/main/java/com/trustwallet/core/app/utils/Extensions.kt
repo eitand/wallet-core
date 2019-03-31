@@ -4,6 +4,10 @@ fun ByteArray.toHex(): String {
     return Numeric.toHexString(this)
 }
 
+fun ByteArray.toHexString(): String {
+    return Numeric.toHexString(this, false)
+}
+
 fun String.toHexBytes(): ByteArray {
     return Numeric.hexStringToByteArray(this)
 }

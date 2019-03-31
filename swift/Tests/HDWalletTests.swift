@@ -8,7 +8,7 @@ import TrustWalletCore
 import XCTest
 
 extension HDWallet {
-    static let test = HDWallet(mnemonic: "ripple scissors kick mammal hire column oak again sun offer wealth tomorrow wagon turn fatal", passphrase: "TREZOR")
+    static let test = HDWallet(mnemonic: "ripple scissors kick mammal hire column oak again sun offer wealth tomorrow wagon turn fatal", passphrase: "")
 }
 
 class HDWalletTests: XCTestCase {
@@ -282,5 +282,185 @@ class HDWalletTests: XCTestCase {
 
         XCTAssertEqual(pubkey.data.hexString, "039fdd3652495d01b6a363f8db8b3adce09f83ea5c43ff872ad0a39192340256b0")
         XCTAssertEqual(address.description, "bc1qearv5ezm3xfgy2t98denkzxwst4f35fvz608wa")
+    }
+    
+    func testDeriveFromEther() {
+        let expectedAddress = "0xA3Dcd899C0f3832DFDFed9479a9d828c6A4EB2A7"
+        let wallet = HDWallet.test
+        let ether = CoinType.ethereum
+        
+        // get extended public keys for BIP44, BIP49 and BIP84
+        let publicKey44 = wallet.getExtendedPublicKey(purpose: Purpose.bip44, coin: ether, version: HDVersion.xpub)
+        XCTAssertEqual("xpub6BsRBaXawwf5vGydzpBSDXrQJ5rZKrZQGPTWkXRTWXz1KZ11D8TixEwX3uBWHwZE1DzQJuyLT9hgZcp4bFKfYNCx5cYCYBQqP5jbxcVQumc",
+            publicKey44)
+        
+        let privateKey = wallet.getKeyForCoin(coin: ether)
+        XCTAssertEqual("ab4accc9310d90a61fc354d8f353bca4a2b3c0590685d3eb82d0216af3badddc",
+            privateKey.data.hexString)
+        
+        let address = CoinType.ethereum.deriveAddress(privateKey: privateKey)
+        XCTAssertEqual(expectedAddress,
+            address)
+        
+        let xpubAddr0_44 =
+            HDWallet.getPublicKeyFromExtended(extended: publicKey44, curve: ether.curve, versionPublic: HDVersion.xpub, versionPrivate: HDVersion.xprv, change: 0, address: 0)
+        XCTAssertEqual("0348a9ffac8022f1c7eb5253746e24d11d9b6b2737c0aecd48335feabb95a17991",
+            xpubAddr0_44.data.hexString)
+        
+        //FIXME: fails - wrong address
+        let etherAddress0_44 = EthereumAddress(publicKey: xpubAddr0_44)
+        XCTAssertEqual(expectedAddress,
+                       etherAddress0_44.description,
+                       "EthereumAddress"
+        )
+        
+        //FIXME: fails - crash
+        let addressFromExtended = HDWallet.getAddressFromExtended(extended: publicKey44, curve: ether.curve, coinType: ether, change: 0, address: 0)
+        XCTAssertEqual(
+            expectedAddress,
+            addressFromExtended,
+            "getAddressFromExtended"
+        )
+    }
+    
+    func testBIP44BitcoinAddressDerivation() {
+        let wallet = HDWallet.test
+
+       let bitcoin = CoinType.bitcoin
+        
+        // get extended public keys for BIP44, BIP49 and BIP84
+        let publicKey44 = wallet.getExtendedPublicKey(purpose: Purpose.bip44, coin: CoinType.bitcoin, version: HDVersion.xpub)
+        XCTAssertEqual(
+        "xpub6CGhFjZe528TNZe7QPEdbPyB6djTVAdiiZ6upeLphjG5pxwnpJ7KCx7jXvoTvaWK5fcD5xa9Cc1eeThAFnhiDcS4wcaWkgg4dSMTtVuDtPn",
+        publicKey44
+        )
+        
+        // get public keys for index 2 and 9
+        
+       let xpubAddr2_44 =
+        HDWallet.getPublicKeyFromExtended(extended: publicKey44, curve: CoinType.bitcoin.curve, versionPublic: HDVersion.xpub, versionPrivate: HDVersion.xprv, change: 0, address: 2)
+        XCTAssertEqual("0232880aa42a5fe8248ae8484af7bf38cea5a5af4cca1433c15aa894709fa092bb", xpubAddr2_44.data.hexString)
+        
+       let xpubAddr9_44 =
+        HDWallet.getPublicKeyFromExtended(extended: publicKey44, curve: CoinType.bitcoin.curve, versionPublic: HDVersion.xpub, versionPrivate: HDVersion.xprv, change: 0, address: 9)
+        XCTAssertEqual("026b716e1769fb8c7a56c0bac3ed4e9de1916ae077392f4ccf71c2c17edc5de932", xpubAddr9_44.data.hexString)
+        
+        // Create BitcoinAddress for indexes 2 and 9
+        let bitcoinAddress2_44 = BitcoinAddress(publicKey: xpubAddr2_44, prefix: P2PKHPrefix.bitcoin.rawValue)
+        XCTAssertEqual("1U1EJFeKJdxnFD4aQ1FcGTwifStLu2Ek1", bitcoinAddress2_44.description)
+        
+        let bitcoinAddress9_44 = BitcoinAddress(publicKey: xpubAddr9_44, prefix: P2PKHPrefix.bitcoin.rawValue)
+        XCTAssertEqual("16MhWKwFNbffohVgVfzZ1Lnw8RT5em9EkT", bitcoinAddress9_44.description)
+        
+        // Get address with extended public key for indexes 2 and 9
+        
+        CoinType.bitcoin.
+        
+        let addressFromExtendedPrv2_44 = HDWallet.getAddressFromExtended(extended: publicKey44, curve: CoinType.bitcoin.curve, coinType: bitcoin, change: 0, address: 2)
+        XCTAssertEqual("1U1EJFeKJdxnFD4aQ1FcGTwifStLu2Ek1", addressFromExtendedPrv2_44)
+        
+        let addressFromExtendedPrv9_44 = HDWallet.getAddressFromExtended(extended: publicKey44, curve: CoinType.bitcoin.curve, coinType: bitcoin, change: 0, address: 9)
+        XCTAssertEqual("16MhWKwFNbffohVgVfzZ1Lnw8RT5em9EkT", addressFromExtendedPrv9_44)
+    }
+    
+    
+    func testBIP49BitcoinAddressDerivation() {
+        let wallet = HDWallet.test
+        let bitcoin = CoinType.bitcoin
+    
+        // get extended public keys for BIP44, BIP49 and BIP84
+        let publicKey49 = wallet.getExtendedPublicKey(purpose: Purpose.bip49, coin: CoinType.bitcoin, version: HDVersion.ypub)
+        XCTAssertEqual(
+        "ypub6WyMy5eSFvcW7igibKYod3rEr5K9dq22McfmUWBYnpwzMnzDE2SooUHhtSn2GU5QUpiqtdSPopepRQM1iVtCA2ZuUde4nHpZSjNSY1HoxP5",
+        publicKey49
+        )
+    
+        // get addresses for BIP49
+       let xpubAddr2_49 =
+        HDWallet.getPublicKeyFromExtended(extended: publicKey49, curve: CoinType.bitcoin.curve, versionPublic: HDVersion.ypub, versionPrivate: HDVersion.yprv, change: 0, address: 2)
+        XCTAssertEqual(
+        "0399bec5d79671dc018ef9ba4ad2736caf3e4670541b89f3285bf176906fa17ddf",
+        xpubAddr2_49.data.hexString
+        )
+    
+       let xpubAddr9_49 =
+        HDWallet.getPublicKeyFromExtended(extended: publicKey49, curve: CoinType.bitcoin.curve, versionPublic: HDVersion.ypub, versionPrivate: HDVersion.yprv, change: 0, address: 9)
+        XCTAssertEqual(
+        "0290463bf39056efb31d54f3b4db4cc23db1e08afd01721128fa3f0ad0fcfd908a",
+        xpubAddr9_49.data.hexString
+        )
+    
+        //FIXME: fails here
+        let bitcoinAddress2_49 = BitcoinAddress(publicKey: xpubAddr2_49, prefix: P2PKHPrefix.bitcoin.rawValue)
+        XCTAssertEqual(
+        "363Bijf6729pXU8PV55jma4G8ugYH5un6Y",
+        bitcoinAddress2_49.description
+        )
+    
+        //FIXME: fails here
+        let bitcoinAddress9_49 = BitcoinAddress(publicKey: xpubAddr9_49, prefix: P2PKHPrefix.bitcoin.rawValue)
+        XCTAssertEqual(
+        "3HFJHTWmwkGvhQw8dyyRm3MaiwePHmCsja",
+        bitcoinAddress9_49.description
+        )
+    
+        //FIXME: fails here
+        let addressFromExtendedPrv2_49 = HDWallet.getAddressFromExtended(extended: publicKey49, curve: CoinType.bitcoin.curve, coinType: bitcoin, change: 0, address: 2)
+        XCTAssertEqual(
+        "363Bijf6729pXU8PV55jma4G8ugYH5un6Y",
+        addressFromExtendedPrv2_49
+        )
+    
+        //FIXME: fails here
+        let addressFromExtendedPrv9_49 = HDWallet.getAddressFromExtended(extended: publicKey49, curve: CoinType.bitcoin.curve, coinType: bitcoin, change: 0, address: 9)
+        XCTAssertEqual(
+        "3HFJHTWmwkGvhQw8dyyRm3MaiwePHmCsja",
+        addressFromExtendedPrv9_49
+        )
+    
+    }
+    
+    func testBIP84BitcoinAddressDerivation() {
+        let wallet = HDWallet.test
+        let bitcoin = CoinType.bitcoin
+        
+        // get extended public keys for BIP44, BIP49 and BIP84
+        let publicKey84 = wallet.getExtendedPublicKey(purpose: Purpose.bip84, coin: CoinType.bitcoin, version: HDVersion.zpub)
+        XCTAssertEqual(
+        "zpub6rNUNtxSa9Gxvm4Bdxf1MPMwrvkzwDx6vP96Hkzw3jiQKdg3fhXBStxjn12YixQB8h88B3RMSRscRstf9AEVaYr3MAqVBEWBDuEJU4PGaT9",
+        publicKey84
+        )
+        
+        let xpubAddr2_84 = HDWallet.getPublicKeyFromExtended(extended: publicKey84, curve: CoinType.bitcoin.curve, versionPublic: HDVersion.zpub, versionPrivate: HDVersion.zprv, change: 0, address: 2)
+        XCTAssertEqual(
+        "031e1f64d2f6768dccb6814545b2e2d58e26ad5f91b7cbaffe881ed572c65060db",
+        xpubAddr2_84.data.hexString
+        )
+        let xpubAddr9_84 = HDWallet.getPublicKeyFromExtended(extended: publicKey84, curve: CoinType.bitcoin.curve, versionPublic: HDVersion.zpub, versionPrivate: HDVersion.zprv, change: 0, address: 9)
+        XCTAssertEqual(
+        "03d2296f102d152a68c15efdb930e3702fcb0a6979c8aa13f2615fb8acc25d0671",
+        xpubAddr9_84.data.hexString
+        )
+       let bitcoinAddress2_84 = Bech32Address(hrp: HRP.bitcoin, publicKey: xpubAddr2_84)
+        XCTAssertEqual(
+        "bc1q7zddsunzaftf4zlsg9exhzlkvc5374a6v32jf6",
+        bitcoinAddress2_84.description
+        )
+       let bitcoinAddress9_84 = Bech32Address(hrp: HRP.bitcoin, publicKey: xpubAddr9_84)
+        XCTAssertEqual(
+        "bc1que850pvrezlk4rd9zthdpkfylj3ashhr74xemg",
+        bitcoinAddress9_84.description
+        )
+        let addressFromExtendedPrv2_84 = HDWallet.getAddressFromExtended(extended: publicKey84, curve: CoinType.bitcoin.curve, coinType: bitcoin, change: 0, address: 2)
+        XCTAssertEqual(
+        "bc1q7zddsunzaftf4zlsg9exhzlkvc5374a6v32jf6",
+        addressFromExtendedPrv2_84
+        )
+        let addressFromExtendedPrv9_84 = HDWallet.getAddressFromExtended(extended: publicKey84, curve: CoinType.bitcoin.curve, coinType: bitcoin, change: 0, address: 9)
+        XCTAssertEqual(
+        "bc1que850pvrezlk4rd9zthdpkfylj3ashhr74xemg",
+        addressFromExtendedPrv9_84
+        )
+    
     }
 }

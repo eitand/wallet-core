@@ -13,6 +13,7 @@
 #include "Decred/Address.h"
 #include "Ripple/Address.h"
 #include "Zcash/TAddress.h"
+#include "Ethereum/Address.h"
 
 #include <TrezorCrypto/bip32.h>
 #include <TrezorCrypto/bip39.h>
@@ -179,6 +180,10 @@ std::optional<std::string> HDWallet::getAddressFromExtended(const std::string& e
     } break;
     case TWCoinTypeRipple: {
         auto address = Ripple::Address(reinterpret_cast<PublicKey&>(publicKey));
+        string = address.string();
+    } break;
+    case TWCoinTypeEthereum: {
+        auto address = Ethereum::Address(reinterpret_cast<PublicKey&>(publicKey));
         string = address.string();
     } break;
     default:

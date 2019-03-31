@@ -18,7 +18,7 @@ android {
     }
 
     sourceSets {
-        main.java.srcDirs += '../../jni/java'
+        main.java.srcDirs += '../../JNI/java'
     }
     externalNativeBuild {
         cmake {
